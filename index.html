@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snake Game 🐍</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #222;
+      color: white;
+      font-family: Arial, sans-serif;
+      margin: 0;
+    }
+    canvas {
+      border: 2px solid #fff;
+      background: black;
+      display: block;
+    }
+    #controls {
+      margin-top: 10px;
+    }
+    button {
+      padding: 8px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      background: limegreen;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>Snake Game 🐍</h1>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <div id="controls">
+    <button onclick="togglePause()">⏸️ Pause / ▶️ Resume</button>
+    <button onclick="restartGame()">🔄 Restart</button>
+  </div>
+  <h2 id="scoreBoard">Score: 0 | High Score: 0</h2>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const box = 20;
+    let snake;
+    let direction;
+    let food;
+    let score;
+    let game;
+    let paused = false;
+
+    // High score stored in localStorage
+    let highScore = localStorage.getItem("snakeHighScore") || 0;
+
+    function initGame() {
+      snake = [{ x: 9 * box, y: 10 * box }];
+      direction = null;
+      food = {
+        x: Math.floor(Math.random() * 19 + 1) * box,
+        y: Math.floor(Math.random() * 19 + 1) * box,
+      };
+      score = 0;
+      updateScore();
+      if (game) clearInterval(game);
+      game = setInterval(drawGame, 100);
+    }
+
+    // control snake
+    document.addEventListener("keydown", setDirection);
+
+    function setDirection(event) {
+      if (event.key === "ArrowLeft" && direction !== "RIGHT") {
+        direction = "LEFT";
+      } else if (event.key === "ArrowUp" && direction !== "DOWN") {
+        direction = "UP";
+      } else if (event.key === "ArrowRight" && direction !== "LEFT") {
+        direction = "RIGHT";
+      } else if (event.key === "ArrowDown" && direction !== "UP") {
+        direction = "DOWN";
+      }
+    }
+
+    function drawGame() {
+      if (paused) return;
+
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // draw snake
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "lime" : "green";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+        ctx.strokeStyle = "black";
+        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      // draw food
+      ctx.fillStyle = "red";
+      ctx.fillRect(food.x, food.y, box, box);
+
+      let snakeX = snake[0].x;
+      let snakeY = snake[0].y;
+
+      if (direction === "LEFT") snakeX -= box;
+      if (direction === "UP") snakeY -= box;
+      if (direction === "RIGHT") snakeX += box;
+      if (direction === "DOWN") snakeY += box;
+
+      // eat food
+      if (snakeX === food.x && snakeY === food.y) {
+        score++;
+        updateScore();
+        food = {
+          x: Math.floor(Math.random() * 19 + 1) * box,
+          y: Math.floor(Math.random() * 19 + 1) * box,
+        };
+      } else {
+        snake.pop();
+      }
+
+      let newHead = { x: snakeX, y: snakeY };
+
+      // game over
+      if (
+        snakeX < 0 ||
+        snakeY < 0 ||
+        snakeX >= canvas.width ||
+        snakeY >= canvas.height ||
+        collision(newHead, snake)
+      ) {
+        clearInterval(game);
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem("snakeHighScore", highScore);
+        }
+        updateScore();
+        setTimeout(() => {
+          alert("Game Over! Your Score: " + score);
+        }, 100);
+        return;
+      }
+
+      snake.unshift(newHead);
+    }
+
+    function collision(head, array) {
+      for (let i = 0; i < array.length; i++) {
+        if (head.x === array[i].x && head.y === array[i].y) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function togglePause() {
+      paused = !paused;
+    }
+
+    function restartGame() {
+      initGame();
+    }
+
+    function updateScore() {
+      document.getElementById("scoreBoard").innerText =
+        "Score: " + score + " | High Score: " + highScore;
+    }
+
+    initGame();
+  </script>
+</body>
+</html>
